@@ -42,6 +42,7 @@
   .reveal.on{background:#fff;color:#14111f;border:2px solid #fff}
   .reveal .hint{color:var(--mute);font-size:15px}
   .reveal .word{font-size:44px;font-weight:700;text-align:center;padding:0 10px}
+  .reveal .fr{font-size:18px;color:#5b5577;margin-top:8px;font-style:italic}
   .note{font-size:14px;color:var(--mute);margin-top:12px;line-height:1.45}
 
   /* host */
@@ -104,6 +105,7 @@
     <div class="reveal" id="revealBox">
       <div class="hint" id="revealHint">Press and hold to see your word</div>
       <div class="word hidden" id="revealWord"></div>
+      <div class="fr hidden" id="revealFr"></div>
     </div>
     <p class="note">Check that your round number matches the big screen. Everyone has the same word, except the Impostor. Maybe it's you, you can't know!</p>
     <div class="row" style="margin-top:14px">
@@ -2494,6 +2496,7 @@ var qrcode = function() {
     ["Elevator","Stairs"],["Pen","Pencil"],["Rain","Snow"],["Paris","London"],
     ["Breakfast","Lunch"],["Library","Bookshop"],["Ladder","Scaffolding"],["Email","Text message"]
   ];
+  var FR = {"Coffee": "Café", "Tea": "Thé", "Beach": "Plage", "Swimming pool": "Piscine", "Train": "Train", "Metro": "Métro", "Pizza": "Pizza", "Burger": "Burger", "Winter": "Hiver", "Autumn": "Automne", "Laptop": "Ordinateur portable", "Tablet": "Tablette", "Plane": "Avion", "Helicopter": "Hélicoptère", "Football": "Football", "Rugby": "Rugby", "Hotel": "Hôtel", "Hostel": "Auberge de jeunesse", "Bridge": "Pont", "Tunnel": "Tunnel", "Crane": "Grue", "Excavator": "Pelleteuse", "Concrete": "Béton", "Steel": "Acier", "Helmet": "Casque", "Safety vest": "Gilet de sécurité", "Meeting": "Réunion", "Interview": "Entretien", "Cat": "Chat", "Dog": "Chien", "Guitar": "Guitare", "Piano": "Piano", "Netflix": "Netflix", "YouTube": "YouTube", "Mountain": "Montagne", "Hill": "Colline", "Wine": "Vin", "Beer": "Bière", "Doctor": "Médecin", "Nurse": "Infirmier / infirmière", "Birthday": "Anniversaire", "Wedding": "Mariage", "Bicycle": "Vélo", "Scooter": "Trottinette", "Ice cream": "Glace", "Yogurt": "Yaourt", "Teacher": "Professeur", "Student": "Étudiant", "Instagram": "Instagram", "TikTok": "TikTok", "Shower": "Douche", "Bath": "Bain", "Moon": "Lune", "Sun": "Soleil", "Hammer": "Marteau", "Screwdriver": "Tournevis", "Elevator": "Ascenseur", "Stairs": "Escaliers", "Pen": "Stylo", "Pencil": "Crayon", "Rain": "Pluie", "Snow": "Neige", "Paris": "Paris", "London": "Londres", "Breakfast": "Petit-déjeuner", "Lunch": "Déjeuner", "Library": "Bibliothèque", "Bookshop": "Librairie", "Ladder": "Échelle", "Scaffolding": "Échafaudage", "Email": "E-mail", "Text message": "SMS"};
   var LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 
   // ---------- deterministic randomness ----------
@@ -2546,12 +2549,12 @@ var qrcode = function() {
     $("pRound").textContent=P.round;
     $("pInfo").textContent="Code "+P.code+" · Seat "+P.seat;
     var info=roundInfo(P.code,P.round);
-    $("revealWord").textContent = (P.seat===info.seat)?info.imp:info.civ;
+    var w=(P.seat===info.seat)?info.imp:info.civ; $("revealWord").textContent = w; $("revealFr").textContent = FR[w] ? "FR : "+FR[w] : "";
     hideWord();
     $("prevRound").disabled = P.round<=1;
   }
-  function showWord(e){ if(e) e.preventDefault(); $("revealBox").classList.add("on"); $("revealHint").classList.add("hidden"); $("revealWord").classList.remove("hidden"); }
-  function hideWord(){ $("revealBox").classList.remove("on"); $("revealHint").classList.remove("hidden"); $("revealWord").classList.add("hidden"); }
+  function showWord(e){ if(e) e.preventDefault(); $("revealBox").classList.add("on"); $("revealHint").classList.add("hidden"); $("revealWord").classList.remove("hidden"); $("revealFr").classList.remove("hidden"); }
+  function hideWord(){ $("revealBox").classList.remove("on"); $("revealHint").classList.remove("hidden"); $("revealWord").classList.add("hidden"); $("revealFr").classList.add("hidden"); }
   var rb=$("revealBox");
   rb.addEventListener("pointerdown",showWord);
   ["pointerup","pointerleave","pointercancel"].forEach(function(ev){rb.addEventListener(ev,hideWord);});
@@ -2607,7 +2610,7 @@ var qrcode = function() {
   $("nPlayers").addEventListener("change",startGame);
   $("revealBtn").addEventListener("click",function(){
     var info=roundInfo(H.code,H.round);
-    $("rC").textContent=info.civ; $("rI").textContent=info.imp;
+    $("rC").textContent=info.civ+" ("+(FR[info.civ]||"")+")"; $("rI").textContent=info.imp+" ("+(FR[info.imp]||"")+")";
     var nm=H.names[info.seat-1]; $("rS").textContent= nm && nm!=="Seat "+info.seat ? info.seat+" · "+nm : "Seat "+info.seat;
     $("revBox").classList.remove("hidden"); stopTimer(); $("phase").textContent="Revealed";
   });
