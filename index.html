@@ -84,9 +84,9 @@
 
   <form id="joinForm" class="card">
     <label for="code">Game code</label>
-    <input id="code" autocomplete="off" autocapitalize="characters" maxlength="4" placeholder="e.g. KTR6">
-    <label for="seat">Your seat number</label>
-    <input id="seat" type="number" inputmode="numeric" min="1" max="9" placeholder="1, 2, 3...">
+    <input id="code" autocomplete="off" autocapitalize="characters" maxlength="4" placeholder="e.g. KTRW">
+    <label for="pname">Your name</label>
+    <input id="pname" autocomplete="given-name" maxlength="20" placeholder="e.g. Ben">
     <div class="err" id="joinErr"></div>
     <button class="primary" style="width:100%;margin-top:6px" type="submit">Join the game</button>
   </form>
@@ -101,19 +101,17 @@
   </div>
   <div class="card center">
     <div class="round">Round</div>
-    <div class="roundnum" id="pRound">1</div>
-    <div class="reveal" id="revealBox">
+    <div class="roundnum" id="pRound">-</div>
+    <div class="reveal" id="waitBox"><div class="hint" id="waitMsg">Joining the game...</div></div>
+    <div class="reveal hidden" id="revealBox">
       <div class="hint" id="revealHint">Press and hold to see your word</div>
       <div class="word hidden" id="revealWord"></div>
       <div class="fr hidden" id="revealFr"></div>
     </div>
-    <p class="note">Check that your round number matches the big screen. Everyone has the same word, except the Impostor. Maybe it's you, you can't know!</p>
-    <div class="row" style="margin-top:14px">
-      <button class="ghost" id="prevRound" type="button">&larr; Previous</button>
-      <button class="primary" id="nextRound" type="button">Next round &rarr;</button>
-    </div>
+    <p class="note">The host controls the rounds: your word changes automatically. Everyone has the same word, except the Impostor. Maybe it's you, you can't know!</p>
+    <p class="note" id="connState" style="font-size:12px"></p>
   </div>
-  <p class="center" style="margin-top:20px"><button class="linkish" id="leave" type="button">Change code or seat</button></p>
+  <p class="center" style="margin-top:20px"><button class="linkish" id="leave" type="button">Leave this game</button></p>
 </section>
 
 <!-- ============ HOST ============ -->
@@ -124,8 +122,6 @@
       The Impostor
     </span>
     <span class="row" style="flex:none;gap:10px;align-items:center">
-      <label for="nPlayers" style="margin:0">Players</label>
-      <select id="nPlayers" style="width:90px;font-size:16px;padding:8px 10px"></select>
       <button id="newGame" class="ghost" type="button">New game</button>
       <button id="toJoin" class="linkish" type="button">Exit</button>
     </span>
@@ -139,24 +135,25 @@
       <ol class="steps">
         <li>Scan the QR code</li>
         <li>Type the code above</li>
-        <li>Pick your seat number (1 to <span id="hN">6</span>)</li>
+        <li>Type your name: your seat is given automatically</li>
       </ol>
+      <p class="note" id="syncState"></p>
     </div>
 
     <div>
       <div class="card">
         <div class="row" style="align-items:center">
           <div>
-            <div class="round">Round</div>
-            <div class="roundnum" id="hRound">1</div>
+            <div class="round" id="hRoundLabel">Lobby</div>
+            <div class="roundnum" id="hRound">-</div>
           </div>
           <div style="flex:none" class="row">
             <button id="hPrev" class="ghost" type="button">&larr;</button>
-            <button id="hNext" class="primary" type="button">Next round &rarr;</button>
+            <button id="hNext" class="primary" type="button">Start round 1 &rarr;</button>
           </div>
         </div>
         <div class="timer center" id="timerBox" style="margin-top:12px">
-          <div class="phase" id="phase">Ready</div>
+          <div class="phase" id="phase">Waiting for players</div>
           <div class="big" id="clock">0:00</div>
         </div>
         <div class="phases">
@@ -175,8 +172,9 @@
       </div>
 
       <div class="card">
-        <h3>Scores</h3>
+        <h3>Players &amp; scores (<span id="pCount">0</span>)</h3>
         <div class="scores" id="scores"></div>
+        <p class="note" id="noPlayers">No player yet. Players appear here when they join.</p>
         <p class="note">Caught Impostor: +1 to each Civilian. Impostor not caught: +3 to the Impostor. Caught Impostor guesses the word: +2. French word: -1.</p>
       </div>
     </div>
@@ -2484,7 +2482,6 @@ var qrcode = function() {
 <script>
 (function(){
   var APP_URL = "https://leptitben69.github.io/the-impostor/";
-
   var PAIRS = [
     ["Coffee","Tea"],["Beach","Swimming pool"],["Train","Metro"],["Pizza","Burger"],
     ["Winter","Autumn"],["Laptop","Tablet"],["Plane","Helicopter"],["Football","Rugby"],
@@ -2498,6 +2495,7 @@ var qrcode = function() {
   ];
   var FR = {"Coffee": "Café", "Tea": "Thé", "Beach": "Plage", "Swimming pool": "Piscine", "Train": "Train", "Metro": "Métro", "Pizza": "Pizza", "Burger": "Burger", "Winter": "Hiver", "Autumn": "Automne", "Laptop": "Ordinateur portable", "Tablet": "Tablette", "Plane": "Avion", "Helicopter": "Hélicoptère", "Football": "Football", "Rugby": "Rugby", "Hotel": "Hôtel", "Hostel": "Auberge de jeunesse", "Bridge": "Pont", "Tunnel": "Tunnel", "Crane": "Grue", "Excavator": "Pelleteuse", "Concrete": "Béton", "Steel": "Acier", "Helmet": "Casque", "Safety vest": "Gilet de sécurité", "Meeting": "Réunion", "Interview": "Entretien", "Cat": "Chat", "Dog": "Chien", "Guitar": "Guitare", "Piano": "Piano", "Netflix": "Netflix", "YouTube": "YouTube", "Mountain": "Montagne", "Hill": "Colline", "Wine": "Vin", "Beer": "Bière", "Doctor": "Médecin", "Nurse": "Infirmier / infirmière", "Birthday": "Anniversaire", "Wedding": "Mariage", "Bicycle": "Vélo", "Scooter": "Trottinette", "Ice cream": "Glace", "Yogurt": "Yaourt", "Teacher": "Professeur", "Student": "Étudiant", "Instagram": "Instagram", "TikTok": "TikTok", "Shower": "Douche", "Bath": "Bain", "Moon": "Lune", "Sun": "Soleil", "Hammer": "Marteau", "Screwdriver": "Tournevis", "Elevator": "Ascenseur", "Stairs": "Escaliers", "Pen": "Stylo", "Pencil": "Crayon", "Rain": "Pluie", "Snow": "Neige", "Paris": "Paris", "London": "Londres", "Breakfast": "Petit-déjeuner", "Lunch": "Déjeuner", "Library": "Bibliothèque", "Bookshop": "Librairie", "Ladder": "Échelle", "Scaffolding": "Échafaudage", "Email": "E-mail", "Text message": "SMS"};
   var LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  var NTFY = "https://ntfy.sh/";
 
   // ---------- deterministic randomness ----------
   function hash(str){ // cyrb53
@@ -2513,45 +2511,87 @@ var qrcode = function() {
     for (var i=idx.length-1;i>0;i--){var j=Math.floor(r()*(i+1));var t=idx[i];idx[i]=idx[j];idx[j]=t;}
     return idx;
   }
-  function roundInfo(code, round){
-    var n=parseInt(code.charAt(3),10);
+  function roundInfo(code, round, n){
     var ord=order(code);
     var pair=PAIRS[ord[(round-1)%ord.length]];
     var flip=hash(code+"|flip|"+round)%2===1;
-    var civ=flip?pair[1]:pair[0], imp=flip?pair[0]:pair[1];
-    var seat=(hash(code+"|imp|"+round)%n)+1;
-    return {n:n, civ:civ, imp:imp, seat:seat};
+    return {civ:flip?pair[1]:pair[0], imp:flip?pair[0]:pair[1], seat:(hash(code+"|imp|"+round+"|"+n)%n)+1};
   }
-  function validCode(c){return /^[A-HJ-NP-Z]{3}[3-9]$/.test(c);}
+  function validCode(c){return /^[A-HJ-NP-Z]{4}$/.test(c);}
+  function topic(code){ return "lb69-the-impostor-"+code.toLowerCase()+"-"+(hash("imp|"+code)%100000); }
+  function stateTopic(code){ return topic(code)+"-s"; }
+  function joinTopic(code){ return topic(code)+"-j"; }
+  function rid(){ var s=""; for(var i=0;i<10;i++) s+="abcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(Math.random()*36)); return s; }
+  function post(t, body){ return fetch(NTFY+t,{method:"POST",body:body}); }
+  function pollJson(t, since){
+    return fetch(NTFY+t+"/json?poll=1&since="+since).then(function(r){return r.text();}).then(function(txt){
+      var out=[]; txt.trim().split("\n").forEach(function(l){ try{var j=JSON.parse(l); if(j.event==="message") out.push(j.message);}catch(_){} }); return out;
+    });
+  }
+  function subscribe(t, onMsg, onState){
+    var es=new EventSource(NTFY+t+"/sse");
+    es.onmessage=function(ev){ try{var j=JSON.parse(ev.data); if(j.event==="message") onMsg(j.message);}catch(_){} };
+    es.onopen=function(){ onState(true); };
+    es.onerror=function(){ onState(false); };
+    return es;
+  }
+  function store(k,v){try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){return null;}}
 
-  function store(k,v){try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){return null;}}
-
-  // ---------- views ----------
   var views={join:$("join"),player:$("player"),host:$("host")};
   function $(id){return document.getElementById(id);}
   function show(v){for(var k in views) views[k].classList.toggle("hidden",k!==v);}
 
-  // ---------- player ----------
-  var P={code:"",seat:0,round:1};
+  // =================== PLAYER ===================
+  var P={code:"",id:"",name:"",state:null,es:null,lastJoin:0};
   $("joinForm").addEventListener("submit",function(e){
     e.preventDefault();
-    var c=$("code").value.trim().toUpperCase(), s=parseInt($("seat").value,10);
-    if(!validCode(c)){ $("joinErr").textContent="This code doesn't look right. It has 3 letters and 1 number, like KTR6."; return; }
-    var n=parseInt(c.charAt(3),10);
-    if(!(s>=1&&s<=n)){ $("joinErr").textContent="Pick a seat number between 1 and "+n+"."; return; }
+    var c=$("code").value.trim().toUpperCase(), nm=$("pname").value.trim().slice(0,20);
+    if(!validCode(c)){ $("joinErr").textContent="This code doesn't look right. It has 4 letters, like KTRW."; return; }
+    if(!nm){ $("joinErr").textContent="Type your name."; return; }
     $("joinErr").textContent="";
-    var same = store("imp_code")===c && parseInt(store("imp_seat"),10)===s;
-    P.code=c; P.seat=s; P.round= same ? (parseInt(store("imp_round"),10)||1) : 1;
-    store("imp_code",c); store("imp_seat",String(s)); store("imp_round",String(P.round));
-    renderPlayer(); show("player");
+    P.code=c; P.name=nm; P.state=null;
+    P.id=store("imp_id_"+c) || rid(); store("imp_id_"+c,P.id);
+    store("imp_code",c); store("imp_name",nm);
+    show("player"); renderPlayer(); sendJoin(true); connect();
   });
+  function sendJoin(force){
+    if(!force && Date.now()-P.lastJoin<8000) return;
+    P.lastJoin=Date.now();
+    post(joinTopic(P.code),"J"+JSON.stringify({id:P.id,name:P.name})).catch(function(){ $("connState").textContent="Connection problem, retrying..."; });
+  }
+  function onState(msg){
+    if(!msg || msg.charAt(0)!=="S") return;
+    try{ P.state=JSON.parse(msg.slice(1)); }catch(_){ return; }
+    renderPlayer();
+  }
+  function pollState(){
+    if(!P.code) return;
+    pollJson(stateTopic(P.code),"latest").then(function(list){ if(list.length) onState(list[list.length-1]); $("connState").textContent="Connected"; })
+      .catch(function(){ $("connState").textContent="Connection problem, retrying..."; });
+  }
+  function connect(){
+    if(P.es){ try{P.es.close();}catch(_){} P.es=null; }
+    pollState();
+    try{ P.es=subscribe(stateTopic(P.code), onState, function(ok){ $("connState").textContent= ok ? "Connected" : "Connection lost, reconnecting..."; if(ok) pollState(); }); }catch(_){}
+  }
+  setInterval(function(){ if(P.code && !views.player.classList.contains("hidden")) pollState(); }, 90000);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden && P.code && !views.player.classList.contains("hidden")) connect(); });
+
+  function wait(msg){ $("waitMsg").textContent=msg; $("waitBox").classList.remove("hidden"); $("revealBox").classList.add("hidden"); }
   function renderPlayer(){
-    $("pRound").textContent=P.round;
-    $("pInfo").textContent="Code "+P.code+" · Seat "+P.seat;
-    var info=roundInfo(P.code,P.round);
-    var w=(P.seat===info.seat)?info.imp:info.civ; $("revealWord").textContent = w; $("revealFr").textContent = FR[w] ? "FR : "+FR[w] : "";
-    hideWord();
-    $("prevRound").disabled = P.round<=1;
+    var st=P.state, seat=0;
+    if(st && st.p){ for(var i=0;i<st.p.length;i++){ if(st.p[i][0]===P.id){ seat=i+1; break; } } }
+    $("pInfo").textContent=P.name+(seat?" · Seat "+seat:"");
+    if(!st || !seat){ $("pRound").textContent="-"; wait("Joining the game..."); if(st) sendJoin(false); return; }
+    if(!st.r){ $("pRound").textContent="-"; wait("You're in! You are seat "+seat+". Waiting for the host to start..."); return; }
+    $("pRound").textContent=st.r;
+    if(seat>st.n){ wait("You joined during this round. You'll play from the next round."); return; }
+    var info=roundInfo(P.code,st.r,st.n);
+    var w=(seat===info.seat)?info.imp:info.civ;
+    if($("revealWord").textContent!==w || $("revealBox").classList.contains("hidden")){
+      $("revealWord").textContent=w; $("revealFr").textContent=FR[w]?"FR : "+FR[w]:"";
+      $("waitBox").classList.add("hidden"); $("revealBox").classList.remove("hidden"); hideWord();
+    }
   }
   function showWord(e){ if(e) e.preventDefault(); $("revealBox").classList.add("on"); $("revealHint").classList.add("hidden"); $("revealWord").classList.remove("hidden"); $("revealFr").classList.remove("hidden"); }
   function hideWord(){ $("revealBox").classList.remove("on"); $("revealHint").classList.remove("hidden"); $("revealWord").classList.add("hidden"); $("revealFr").classList.add("hidden"); }
@@ -2559,24 +2599,42 @@ var qrcode = function() {
   rb.addEventListener("pointerdown",showWord);
   ["pointerup","pointerleave","pointercancel"].forEach(function(ev){rb.addEventListener(ev,hideWord);});
   rb.addEventListener("contextmenu",function(e){e.preventDefault();});
-  $("nextRound").addEventListener("click",function(){P.round++;store("imp_round",String(P.round));renderPlayer();});
-  $("prevRound").addEventListener("click",function(){if(P.round>1){P.round--;store("imp_round",String(P.round));renderPlayer();}});
-  $("leave").addEventListener("click",function(){show("join");});
+  $("leave").addEventListener("click",function(){ if(P.es){try{P.es.close();}catch(_){} P.es=null;} P.code=""; show("join"); });
 
-  // ---------- host ----------
-  var H={code:"",round:1,scores:[],names:[]};
-  for(var i=3;i<=9;i++){var o=document.createElement("option");o.value=i;o.textContent=i;if(i===6)o.selected=true;$("nPlayers").appendChild(o);}
-  function newCode(n){
-    var r=Math.random, c="";
-    for(var i=0;i<3;i++) c+=LETTERS.charAt(Math.floor(r()*LETTERS.length));
-    return c+n;
-  }
+  // =================== HOST ===================
+  var H={code:"",round:0,nBy:{},players:[]}, hES=null;
+  function saveHost(){ store("imp_host",JSON.stringify(H)); }
+  function newCode(){ var c=""; for(var i=0;i<4;i++) c+=LETTERS.charAt(Math.floor(Math.random()*LETTERS.length)); return c; }
   function startGame(){
-    var n=parseInt($("nPlayers").value,10);
-    H.code=newCode(n); H.round=1; H.scores=[]; H.names=[];
-    for(var i=0;i<n;i++){H.scores.push(0);H.names.push("Seat "+(i+1));}
-    renderHost();
+    H={code:newCode(),round:0,nBy:{},players:[]};
+    saveHost(); listenJoins(); renderHost(); publish();
   }
+  function curN(){ return H.round ? (H.nBy[H.round]||H.players.length) : 0; }
+  function publish(){
+    if(!H.code) return;
+    var st=$("syncState");
+    var body="S"+JSON.stringify({r:H.round,n:curN(),p:H.players.map(function(p){return [p.id,p.name];})});
+    post(stateTopic(H.code),body).then(function(r){ st.textContent = r.ok ? "Phones synced" : "Sync error ("+r.status+")"; })
+      .catch(function(){ st.textContent="Sync error: check the internet connection"; });
+  }
+  function onJoin(msg){
+    if(!msg || msg.charAt(0)!=="J") return;
+    var j; try{ j=JSON.parse(msg.slice(1)); }catch(_){ return; }
+    if(!j.id) return;
+    var name=String(j.name||"Player").slice(0,20);
+    var ex=H.players.filter(function(p){return p.id===j.id;})[0];
+    if(ex){ if(ex.name===name){ publish(); return; } ex.name=name; }
+    else H.players.push({id:j.id,name:name,score:0});
+    saveHost(); renderHost(); publish();
+  }
+  function listenJoins(){
+    if(hES){ try{hES.close();}catch(_){} hES=null; }
+    var t=joinTopic(H.code);
+    pollJson(t,"all").then(function(list){ list.forEach(onJoin); }).catch(function(){});
+    try{ hES=subscribe(t,onJoin,function(ok){ if(!ok) $("syncState").textContent="Connection lost, reconnecting..."; }); }catch(_){}
+  }
+  setInterval(function(){ if(H.code && !views.host.classList.contains("hidden")) pollJson(joinTopic(H.code),"all").then(function(l){l.forEach(onJoin);}).catch(function(){}); }, 20000);
+
   function renderQR(){
     var box=$("qr");
     if(typeof qrcode!=="function"){ box.textContent=APP_URL; return; }
@@ -2585,33 +2643,45 @@ var qrcode = function() {
   }
   function renderHost(){
     $("hCode").textContent=H.code;
-    $("hN").textContent=H.scores.length;
-    $("hRound").textContent=H.round;
-    $("hPrev").disabled=H.round<=1;
+    $("hRoundLabel").textContent = H.round ? "Round" : "Lobby";
+    $("hRound").textContent = H.round || "-";
+    $("hPrev").disabled = H.round<=1;
+    $("hNext").innerHTML = H.round ? "Next round &rarr;" : "Start round 1 &rarr;";
+    $("hNext").disabled = !H.round && H.players.length<3;
+    if(!H.round) $("phase").textContent = H.players.length<3 ? "Waiting for players (3 minimum)" : "Ready";
     $("revBox").classList.add("hidden");
+    $("pCount").textContent=H.players.length;
+    $("noPlayers").classList.toggle("hidden",H.players.length>0);
     var sc=$("scores"); sc.innerHTML="";
-    H.scores.forEach(function(v,i){
+    H.players.forEach(function(p,i){
       var d=document.createElement("div"); d.className="seat";
-      var inp=document.createElement("input"); inp.value=H.names[i]; inp.setAttribute("aria-label","Name for seat "+(i+1));
-      inp.addEventListener("input",function(){H.names[i]=inp.value;});
+      var top=document.createElement("div"); top.style.cssText="display:flex;justify-content:space-between;align-items:center;gap:6px";
+      var nm=document.createElement("span"); nm.textContent=(i+1)+". "+p.name; nm.style.cssText="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+      var rm=document.createElement("button"); rm.type="button"; rm.textContent="x"; rm.title="Remove "+p.name; rm.className="ghost"; rm.style.padding="2px 8px";
+      rm.onclick=function(){ H.players.splice(i,1); saveHost(); renderHost(); publish(); };
+      top.appendChild(nm); top.appendChild(rm);
       var pts=document.createElement("div"); pts.className="pts";
       var minus=document.createElement("button"); minus.type="button"; minus.textContent="-";
-      var b=document.createElement("b"); b.textContent=v;
+      var b=document.createElement("b"); b.textContent=p.score;
       var plus=document.createElement("button"); plus.type="button"; plus.textContent="+";
-      minus.onclick=function(){H.scores[i]--;b.textContent=H.scores[i];};
-      plus.onclick=function(){H.scores[i]++;b.textContent=H.scores[i];};
+      minus.onclick=function(){p.score--;b.textContent=p.score;saveHost();};
+      plus.onclick=function(){p.score++;b.textContent=p.score;saveHost();};
       pts.appendChild(minus);pts.appendChild(b);pts.appendChild(plus);
-      d.appendChild(inp);d.appendChild(pts);sc.appendChild(d);
+      d.appendChild(top);d.appendChild(pts);sc.appendChild(d);
     });
   }
-  $("hNext").addEventListener("click",function(){H.round++;stopTimer();renderHost();});
-  $("hPrev").addEventListener("click",function(){if(H.round>1){H.round--;stopTimer();renderHost();}});
+  $("hNext").addEventListener("click",function(){
+    if(H.players.length<3) return;
+    H.round++; if(!H.nBy[H.round]) H.nBy[H.round]=H.players.length;
+    stopTimer(); $("phase").textContent="Look at your word!"; saveHost(); renderHost(); publish();
+  });
+  $("hPrev").addEventListener("click",function(){ if(H.round>1){ H.round--; stopTimer(); saveHost(); renderHost(); publish(); } });
   $("newGame").addEventListener("click",startGame);
-  $("nPlayers").addEventListener("change",startGame);
   $("revealBtn").addEventListener("click",function(){
-    var info=roundInfo(H.code,H.round);
+    if(!H.round) return;
+    var n=curN(), info=roundInfo(H.code,H.round,n), p=H.players[info.seat-1];
     $("rC").textContent=info.civ+" ("+(FR[info.civ]||"")+")"; $("rI").textContent=info.imp+" ("+(FR[info.imp]||"")+")";
-    var nm=H.names[info.seat-1]; $("rS").textContent= nm && nm!=="Seat "+info.seat ? info.seat+" · "+nm : "Seat "+info.seat;
+    $("rS").textContent= p ? p.name : "Seat "+info.seat;
     $("revBox").classList.remove("hidden"); stopTimer(); $("phase").textContent="Revealed";
   });
 
@@ -2633,13 +2703,18 @@ var qrcode = function() {
   });
   $("stop").addEventListener("click",function(){stopTimer();$("phase").textContent="Paused";});
 
-  function openHost(){ if(!H.code) startGame(); renderQR(); show("host"); try{location.hash="host";}catch(e){} }
+  function openHost(){
+    if(!H.code){
+      var saved=null; try{ saved=JSON.parse(store("imp_host")||"null"); }catch(_){}
+      if(saved && saved.code){ H=saved; H.nBy=H.nBy||{}; listenJoins(); renderHost(); publish(); } else startGame();
+    }
+    renderQR(); show("host"); try{location.hash="host";}catch(e){}
+  }
   $("toHost").addEventListener("click",openHost);
-  $("toJoin").addEventListener("click",function(){ stopTimer(); show("join"); try{history.replaceState(null,"",location.pathname);}catch(e){try{location.hash="";}catch(_){}} });
+  $("toJoin").addEventListener("click",function(){ stopTimer(); show("join"); try{history.replaceState(null,"",location.pathname);}catch(e){} });
 
-  // restore
   var lc=store("imp_code"); if(lc) $("code").value=lc;
-  var ls=store("imp_seat"); if(ls) $("seat").value=ls;
+  var ln=store("imp_name"); if(ln) $("pname").value=ln;
   if(location.hash==="#host") openHost();
 })();
 </script>
